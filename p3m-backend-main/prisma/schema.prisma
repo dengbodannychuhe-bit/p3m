@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Project {
+  id             Int       @id @default(autoincrement())
+  title          String
+  description    String?
+  manager        String?
+  budget         Int?
+  stage          String    @default("Proposal")
+  status         String    @default("Pending Approval")
+  approvalStatus String    @default("Pending")
+  priority       String    @default("Medium")
+  department     String?
+  program        String?
+  startDate      DateTime?
+  endDate        DateTime?
+  createdAt      DateTime  @default(now())
+
+  risks          Risk[]
+  issues         Issue[]
+  scopeChanges   ScopeChange[]
+  benefits       Benefit[]
+  grantMilestones GrantMilestone[]
+}
+
+model Risk {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  severity    String   @default("Medium")
+  status      String   @default("Open")
+  createdAt   DateTime @default(now())
+
+  projectId   Int
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Issue {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  priority    String   @default("Medium")
+  status      String   @default("Open")
+  createdAt   DateTime @default(now())
+
+  projectId   Int
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ScopeChange {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  reason      String?
+  status      String   @default("Pending")
+  createdAt   DateTime @default(now())
+
+  projectId   Int
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Benefit {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  status      String   @default("Planned")
+  createdAt   DateTime @default(now())
+
+  projectId   Int
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model GrantMilestone {
+  id               Int      @id @default(autoincrement())
+  title            String
+  description      String?
+  dueDate          DateTime?
+  status           String   @default("Pending")
+  complianceStatus String   @default("Pending")
+  createdAt        DateTime @default(now())
+
+  projectId        Int
+  project          Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}

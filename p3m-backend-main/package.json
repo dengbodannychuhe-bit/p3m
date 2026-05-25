@@ -1,0 +1,31 @@
+{
+  "name": "p3m-backend",
+  "version": "1.0.0",
+  "description": "Warren Shire Council P3M Backend",
+  "main": "dist/src/server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/src/server.js",
+    "postinstall": "prisma generate"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.5.0",
+    "@prisma/client": "^7.5.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.5.2",
+    "prisma": "^7.5.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.2"
+  }
+}
