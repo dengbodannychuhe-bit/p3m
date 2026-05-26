@@ -51,4 +51,31 @@ router.post("/", async (req: Request, res: Response) => {
   res.status(201).json(newGrantMilestone);
 });
 
+router.patch("/:id", async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const { title, description, dueDate, status, complianceStatus } = req.body;
+
+  if (!id) {
+    return res.status(400).json({
+      message: "valid milestone id is required",
+    });
+  }
+
+  const updatedGrantMilestone = await prisma.grantMilestone.update({
+    where: { id },
+    data: {
+      ...(title !== undefined && { title }),
+      ...(description !== undefined && { description }),
+      ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
+      ...(status !== undefined && { status }),
+      ...(complianceStatus !== undefined && { complianceStatus }),
+    },
+    include: {
+      project: true,
+    },
+  });
+
+  res.json(updatedGrantMilestone);
+});
+
 export default router;

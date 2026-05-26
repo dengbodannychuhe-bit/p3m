@@ -256,6 +256,18 @@ export const grantMilestonesApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  update: (id: number, data: Partial<{
+    title: string;
+    description: string | null;
+    dueDate: string | null;
+    status: string;
+    complianceStatus: string;
+  }>) =>
+    request<BackendGrantMilestone>(`/grant-milestones/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
 };
 
 // ------------------------------------------------------------

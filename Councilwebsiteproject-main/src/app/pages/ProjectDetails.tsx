@@ -17,9 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { toast } from 'sonner';
 import {
   ArrowLeft, DollarSign, User, AlertTriangle, AlertCircle,
-  FileText, Target, Milestone, Plus, X, Loader2, XCircle,
+  FileText, Target, Milestone, Plus, X, Loader2, XCircle, CheckCircle,
 } from 'lucide-react';
-import type { BackendProject } from '../services/api';
+import type { BackendGrantMilestone, BackendProject } from '../services/api';
 
 export function ProjectDetails() {
   const { id } = useParams();
@@ -44,6 +44,7 @@ export function ProjectDetails() {
   });
 
   const canManageStatus = user?.role === 'Administrator' || user?.role === 'Manager';
+  const [reviewingMilestoneId, setReviewingMilestoneId] = useState<number | null>(null);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -151,6 +152,37 @@ export function ProjectDetails() {
       setIsDialogOpen(false);
     } catch {
       toast.error('Failed to add milestone');
+    }
+  };
+
+  const handleMilestoneDecision = async (
+    milestone: BackendGrantMilestone,
+    decision: 'Approved' | 'Rejected'
+  ) => {
+    if (!id || !project) return;
+
+    setReviewingMilestoneId(milestone.id);
+    try {
+      const updated = await grantMilestonesApi.update(milestone.id, {
+        status: decision,
+        complianceStatus: decision === 'Approved' ? 'Compliant' : 'Non-Compliant',
+      });
+
+      addAuditLog({
+        action: decision,
+        entityType: 'Milestone',
+        entityId: String(updated.id),
+        entityName: updated.title,
+        projectId: String(id),
+        description: `${user?.name ?? 'Manager'} ${decision.toLowerCase()} milestone for ${project.title}`,
+      });
+
+      toast.success(`Milestone ${decision.toLowerCase()} successfully`);
+      reloadProject();
+    } catch {
+      toast.error(`Failed to ${decision.toLowerCase()} milestone`);
+    } finally {
+      setReviewingMilestoneId(null);
     }
   };
 
@@ -546,6 +578,7 @@ export function ProjectDetails() {
                       <TableHead>Due Date</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Compliance</TableHead>
+                      {canManageStatus && <TableHead>Manager Approval</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -558,6 +591,35 @@ export function ProjectDetails() {
                         </TableCell>
                         <TableCell><Badge className={getStatusColor(milestone.status)}>{milestone.status}</Badge></TableCell>
                         <TableCell><Badge variant="outline">{milestone.complianceStatus}</Badge></TableCell>
+                        {canManageStatus && (
+                          <TableCell>
+                            {milestone.status === 'Approved' || milestone.status === 'Rejected' ? (
+                              <span className="text-sm text-gray-500">Reviewed</span>
+                            ) : (
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  size="sm"
+                                  className="gap-1.5 bg-green-600 hover:bg-green-700"
+                                  disabled={reviewingMilestoneId === milestone.id}
+                                  onClick={() => handleMilestoneDecision(milestone, 'Approved')}
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50"
+                                  disabled={reviewingMilestoneId === milestone.id}
+                                  onClick={() => handleMilestoneDecision(milestone, 'Rejected')}
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                  Reject
+                                </Button>
+                              </div>
+                            )}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
