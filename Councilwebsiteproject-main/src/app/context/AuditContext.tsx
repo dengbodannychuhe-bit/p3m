@@ -10,6 +10,9 @@ interface AuditContextType {
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => void;
   markNotificationAsRead: (id: string) => void;
   markAllNotificationsAsRead: () => void;
+  completeNotificationAction: (id: string) => void;
+  deleteNotification: (id: string) => void;
+  escalateNotification: (id: string) => void;
   addPublicUpdate: (update: Omit<PublicUpdate, 'id' | 'publishedAt' | 'publishedBy'>) => void;
   getProjectAuditLogs: (projectId: string) => AuditLog[];
   getUnreadNotificationCount: () => number;
@@ -171,6 +174,28 @@ export function AuditProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const completeNotificationAction = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const deleteNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const escalateNotification = (id: string) => {
+    setNotifications(prev =>
+      prev.map(n => n.id === id
+        ? {
+            ...n,
+            type: 'Alert',
+            read: false,
+            title: n.title.startsWith('Escalated:') ? n.title : `Escalated: ${n.title}`,
+          }
+        : n
+      )
+    );
+  };
+
   const addPublicUpdate = (update: Omit<PublicUpdate, 'id' | 'publishedAt' | 'publishedBy'>) => {
     if (!user) return;
 
@@ -202,6 +227,9 @@ export function AuditProvider({ children }: { children: ReactNode }) {
         addNotification,
         markNotificationAsRead,
         markAllNotificationsAsRead,
+        completeNotificationAction,
+        deleteNotification,
+        escalateNotification,
         addPublicUpdate,
         getProjectAuditLogs,
         getUnreadNotificationCount,

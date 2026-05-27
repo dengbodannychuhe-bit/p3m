@@ -3,10 +3,11 @@ import { useProjects } from '../context/ProjectContext';
 import { dashboardApi, DashboardSummary } from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import {
   FolderOpen, AlertTriangle, AlertCircle, Target,
-  TrendingUp, Clock, Loader2, ArrowRight,
+  TrendingUp, Clock, Loader2, ArrowRight, FileDown,
 } from 'lucide-react';
 import { Link } from 'react-router';
 
@@ -112,12 +113,58 @@ export function Dashboard() {
 
   const milestonePct = totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
 
+  const exportDashboardReport = () => {
+    const headers = [
+      'Project',
+      'Job Cost No',
+      'Program',
+      'Stage',
+      'Status',
+      'Priority',
+      'Project Manager',
+      'Department Head',
+      'Department',
+      'Budget',
+      'Risks',
+      'Issues',
+    ];
+    const rows = projects.map(project => [
+      project.title,
+      project.jobCostNo || '',
+      project.program || '',
+      project.stage || '',
+      project.status || '',
+      project.priority || '',
+      project.manager || '',
+      project.departmentHead || '',
+      project.department || '',
+      project.budget ?? '',
+      (project.risks ?? []).length,
+      (project.issues ?? []).length,
+    ]);
+    const csv = [headers, ...rows]
+      .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `p3m-dashboard-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-        <p className="text-sm text-gray-500 mt-0.5">Overview of all council projects and activities</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+          <p className="text-sm text-gray-500 mt-0.5">Overview of all council projects and activities</p>
+        </div>
+        <Button variant="outline" className="gap-2 w-fit" onClick={exportDashboardReport}>
+          <FileDown className="w-4 h-4" />
+          Export Report
+        </Button>
       </div>
 
       {/* Stats grid */}
@@ -217,9 +264,12 @@ export function Dashboard() {
                 <TableRow>
                   <TableHead>Project</TableHead>
                   <TableHead>Program</TableHead>
+                  <TableHead>Job Cost No</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Priority</TableHead>
                   <TableHead>Manager</TableHead>
+                  <TableHead>Department Head</TableHead>
                   <TableHead className="text-right">Risks / Issues</TableHead>
                 </TableRow>
               </TableHeader>
@@ -236,9 +286,12 @@ export function Dashboard() {
                       </div>
                     </TableCell>
                     <TableCell>{project.program || 'No Program'}</TableCell>
+                    <TableCell>{project.jobCostNo || '-'}</TableCell>
                     <TableCell>{project.stage}</TableCell>
                     <TableCell><Badge className={`text-xs border ${getStatusColor(project.status)}`}>{project.status}</Badge></TableCell>
+                    <TableCell>{project.priority ? <Badge className={`text-xs ${getPriorityColor(project.priority)}`}>{project.priority}</Badge> : '-'}</TableCell>
                     <TableCell>{project.manager || '-'}</TableCell>
+                    <TableCell>{project.departmentHead || '-'}</TableCell>
                     <TableCell className="text-right">
                       {(project.risks ?? []).length} / {(project.issues ?? []).length}
                     </TableCell>

@@ -30,7 +30,9 @@ interface ProjectContextType {
   addProject: (data: {
     title: string;
     description?: string;
+    jobCostNo?: string;
     manager?: string;
+    departmentHead?: string;
     budget?: number;
     stage?: string;
     status?: string;
@@ -43,12 +45,13 @@ interface ProjectContextType {
   }) => Promise<BackendProject>;
   getProject: (id: number) => Promise<BackendProject>;
   updateProject: (id: number, data: Partial<{
-    title: string; description: string; manager: string;
+    title: string; description: string; jobCostNo: string | null; manager: string; departmentHead: string | null;
     budget: number | null; stage: string; status: string;
       approvalStatus: string; priority: string; department: string;
       program: string;
       startDate: string; endDate: string;
   }>) => Promise<BackendProject>;
+  deleteProject: (id: number) => Promise<void>;
   addRisk: (data: {
     title: string;
     description?: string;
@@ -130,6 +133,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     return updated;
   };
 
+  const deleteProject: ProjectContextType['deleteProject'] = async (id) => {
+    await projectsApi.delete(id);
+    setProjects(prev => prev.filter(p => p.id !== id));
+  };
+
   const addRisk: ProjectContextType['addRisk'] = async (data) => {
     return risksApi.create(data);
   };
@@ -159,6 +167,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       addProject,
       getProject,
       updateProject,
+      deleteProject,
       addRisk,
       addIssue,
       addScopeChange,

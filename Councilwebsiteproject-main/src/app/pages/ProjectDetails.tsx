@@ -1,4 +1,4 @@
-import { useParams, Link, useLocation } from 'react-router';
+import { useParams, Link, useLocation, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useAuth } from '../context/AuthContext';
@@ -17,21 +17,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { toast } from 'sonner';
 import {
   ArrowLeft, DollarSign, User, AlertTriangle, AlertCircle,
-  FileText, Target, Milestone, Plus, X, Loader2, XCircle, CheckCircle,
+  FileText, Target, Milestone, Plus, X, Loader2, XCircle, CheckCircle, Trash2, Hash,
 } from 'lucide-react';
 import type { BackendGrantMilestone, BackendProject } from '../services/api';
 
 export function ProjectDetails() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const initialTab = (location.state as any)?.tab ?? 'overview';
-  const { getProject, updateProject, addRisk, addIssue, addScopeChange } = useProjects();
+  const { getProject, updateProject, deleteProject, addRisk, addIssue, addScopeChange } = useProjects();
   const { user } = useAuth();
   const { addAuditLog, getProjectAuditLogs } = useAudit();
   const [project, setProject] = useState<BackendProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [entryDialog, setEntryDialog] = useState<'risk' | 'issue' | 'scope' | null>(null);
   const [isSavingEntry, setIsSavingEntry] = useState(false);
   const [entryForm, setEntryForm] = useState({
@@ -83,6 +86,29 @@ export function ProjectDetails() {
       toast.error('Failed to cancel project');
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!id || !project) return;
+    setIsDeleting(true);
+    try {
+      await deleteProject(Number(id));
+      addAuditLog({
+        action: 'Deleted',
+        entityType: 'Project',
+        entityId: String(project.id),
+        entityName: project.title,
+        projectId: String(project.id),
+        description: `${user?.name ?? 'Administrator'} deleted project ${project.title}`,
+      });
+      toast.success('Project deleted');
+      navigate('/projects');
+    } catch {
+      toast.error('Failed to delete project');
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -354,6 +380,17 @@ export function ProjectDetails() {
             Project Cancelled
           </Badge>
         )}
+        {user?.role === 'Administrator' && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-red-700 border-red-300 hover:bg-red-50 flex-shrink-0"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Project
+          </Button>
+        )}
       </div>
 
       {/* Overview */}
@@ -370,12 +407,30 @@ export function ProjectDetails() {
                 </div>
               </div>
             )}
+            {project.jobCostNo && (
+              <div className="flex items-start gap-3">
+                <Hash className="w-5 h-5 text-gray-400 mt-1" />
+                <div>
+                  <p className="text-sm text-gray-600">Job Cost No</p>
+                  <p className="font-semibold text-gray-900">{project.jobCostNo}</p>
+                </div>
+              </div>
+            )}
             {project.manager && (
               <div className="flex items-start gap-3">
                 <User className="w-5 h-5 text-gray-400 mt-1" />
                 <div>
                   <p className="text-sm text-gray-600">Project Manager</p>
                   <p className="font-semibold text-gray-900">{project.manager}</p>
+                </div>
+              </div>
+            )}
+            {project.departmentHead && (
+              <div className="flex items-start gap-3">
+                <User className="w-5 h-5 text-gray-400 mt-1" />
+                <div>
+                  <p className="text-sm text-gray-600">Department Head</p>
+                  <p className="font-semibold text-gray-900">{project.departmentHead}</p>
                 </div>
               </div>
             )}
@@ -800,6 +855,34 @@ export function ProjectDetails() {
               className="gap-2 text-white bg-red-600 hover:bg-red-700"
             >
               {isCancelling ? <><Loader2 className="w-4 h-4 animate-spin" /> Cancelling…</> : 'Yes, Cancel Project'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Project Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-700">
+              <Trash2 className="w-5 h-5" />
+              Delete Project
+            </DialogTitle>
+            <DialogDescription>
+              This permanently deletes <strong>{project.title}</strong> and its risks, issues, scope changes,
+              benefits, and grant milestones. Use this for dummy or test projects only.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 mt-2">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
+              Keep Project
+            </Button>
+            <Button
+              onClick={handleDeleteProject}
+              disabled={isDeleting}
+              className="gap-2 text-white bg-red-700 hover:bg-red-800"
+            >
+              {isDeleting ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</> : 'Delete Permanently'}
             </Button>
           </DialogFooter>
         </DialogContent>

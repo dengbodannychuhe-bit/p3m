@@ -384,6 +384,9 @@ export function Toolkit() {
           <p className="text-gray-600 mt-2">
             Templates, checklists and tools from the iPWEA Project Management Toolkit for Local Government
           </p>
+          <p className="text-sm text-gray-500 mt-1">
+            Saved centrally in the P3M Toolkit library so staff can download the current approved templates from one place.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-sm">
@@ -502,7 +505,8 @@ export function Toolkit() {
               <p className="text-sm font-medium text-gray-700">iPWEA Project Management Toolkit</p>
               <p className="text-xs text-gray-500 mt-1">
                 Templates provided by the Institute of Public Works Engineering Australasia (iPWEA) for local government
-                project management. All documents are for internal use only.
+                project management. The files are stored in the platform toolkit library and can be linked from project
+                records as project templates are completed.
               </p>
             </div>
           </div>

@@ -11,7 +11,9 @@ model Project {
   id             Int       @id @default(autoincrement())
   title          String
   description    String?
+  jobCostNo      String?
   manager        String?
+  departmentHead String?
   budget         Int?
   stage          String    @default("Proposal")
   status         String    @default("Pending Approval")

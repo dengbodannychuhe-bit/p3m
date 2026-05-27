@@ -20,6 +20,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(error.message || `Request failed: ${res.status}`);
   }
 
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
   return res.json();
 }
 
@@ -30,7 +34,9 @@ export interface BackendProject {
   id: number;
   title: string;
   description: string | null;
+  jobCostNo: string | null;
   manager: string | null;
+  departmentHead: string | null;
   budget: number | null;
   stage: string;
   status: string;
@@ -122,7 +128,9 @@ export const projectsApi = {
   create: (data: {
     title: string;
     description?: string;
+    jobCostNo?: string;
     manager?: string;
+    departmentHead?: string;
     budget?: number;
     stage?: string;
     status?: string;
@@ -141,7 +149,9 @@ export const projectsApi = {
   update: (id: number, data: Partial<{
     title: string;
     description: string;
+    jobCostNo: string | null;
     manager: string;
+    departmentHead: string | null;
     budget: number | null;
     stage: string;
     status: string;
@@ -155,6 +165,11 @@ export const projectsApi = {
     request<BackendProject>(`/projects/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
+    }),
+
+  delete: (id: number) =>
+    request<void>(`/projects/${id}`, {
+      method: "DELETE",
     }),
 };
 

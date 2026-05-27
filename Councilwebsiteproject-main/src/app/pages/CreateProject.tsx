@@ -25,12 +25,14 @@ export function CreateProject() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    jobCostNo: '',
     stage: 'Proposal',
     status: 'Pending Approval',
     approvalStatus: 'Pending',
     priority: 'Medium',
     budget: '',
     manager: '',
+    departmentHead: '',
     department: '',
     program: '',
     startDate: '',
@@ -47,12 +49,19 @@ export function CreateProject() {
       return;
     }
 
+    if (formData.jobCostNo && !/^\d{4} - \d{4} - \d{4}$/.test(formData.jobCostNo)) {
+      toast.error('Job Cost No must use the format 1234 - 5678 - 9012');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await addProject({
         title: formData.title,
         description: formData.description,
+        jobCostNo: formData.jobCostNo || undefined,
         manager: formData.manager,
+        departmentHead: formData.departmentHead || undefined,
         budget: formData.budget ? Number(formData.budget.replace(/[^0-9]/g, '')) : undefined,
         stage: formData.stage,
         status: formData.status,
@@ -75,6 +84,12 @@ export function CreateProject() {
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleJobCostChange = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 12);
+    const parts = [digits.slice(0, 4), digits.slice(4, 8), digits.slice(8, 12)].filter(Boolean);
+    handleChange('jobCostNo', parts.join(' - '));
   };
 
   return (
@@ -121,6 +136,19 @@ export function CreateProject() {
                 onChange={(e) => handleChange('description', e.target.value)}
                 rows={4}
                 required
+              />
+            </div>
+
+            {/* Stage and Approval Status */}
+            <div className="space-y-2">
+              <Label htmlFor="jobCostNo">Job Cost No</Label>
+              <Input
+                id="jobCostNo"
+                inputMode="numeric"
+                placeholder="1234 - 5678 - 9012"
+                value={formData.jobCostNo}
+                onChange={(e) => handleJobCostChange(e.target.value)}
+                maxLength={18}
               />
             </div>
 
@@ -216,15 +244,27 @@ export function CreateProject() {
             </div>
 
             {/* Project Manager */}
-            <div className="space-y-2">
-              <Label htmlFor="manager">Project Manager *</Label>
-              <Input
-                id="manager"
-                placeholder="Enter project manager name"
-                value={formData.manager}
-                onChange={(e) => handleChange('manager', e.target.value)}
-                required
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="manager">Project Manager *</Label>
+                <Input
+                  id="manager"
+                  placeholder="Enter project manager name"
+                  value={formData.manager}
+                  onChange={(e) => handleChange('manager', e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="departmentHead">Department Head</Label>
+                <Input
+                  id="departmentHead"
+                  placeholder="Enter department head name"
+                  value={formData.departmentHead}
+                  onChange={(e) => handleChange('departmentHead', e.target.value)}
+                />
+              </div>
             </div>
 
             {/* Program */}

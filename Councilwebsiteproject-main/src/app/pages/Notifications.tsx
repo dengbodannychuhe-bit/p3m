@@ -4,11 +4,18 @@ import { useNavigate } from 'react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Bell, Calendar, AlertCircle, UserPlus, CheckCircle } from 'lucide-react';
+import { Bell, Calendar, AlertCircle, UserPlus, CheckCircle, ArrowUpCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function Notifications() {
-  const { notifications, markNotificationAsRead, markAllNotificationsAsRead } = useAudit();
+  const {
+    notifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    completeNotificationAction,
+    deleteNotification,
+    escalateNotification,
+  } = useAudit();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -123,6 +130,44 @@ export function Notifications() {
                               Project: {notification.projectName}
                             </p>
                           )}
+                          <div className="flex flex-wrap gap-2 mt-4">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1.5 bg-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                completeNotificationAction(notification.id);
+                              }}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Action Complete
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1.5 bg-white text-orange-700 border-orange-200 hover:bg-orange-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                escalateNotification(notification.id);
+                              }}
+                            >
+                              <ArrowUpCircle className="w-4 h-4" />
+                              Escalate
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1.5 bg-white text-red-700 border-red-200 hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteNotification(notification.id);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </Button>
+                          </div>
                         </div>
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
