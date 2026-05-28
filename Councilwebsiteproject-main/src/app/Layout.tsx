@@ -81,15 +81,15 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top accent bar */}
-      <div className="h-1 w-full" style={{ background: `linear-gradient(to right, var(--council-blue), var(--council-purple))` }} />
+      <div className="h-2 w-full" style={{ background: `linear-gradient(to right, var(--council-blue), var(--council-purple))` }} />
 
       {/* Header */}
       <header
-        className="border-b border-blue-100 sticky top-1 z-10 shadow-sm"
-        style={{ background: 'linear-gradient(90deg, #f8fbff 0%, #ffffff 58%, #f4f0ff 100%)' }}
+        className="border-b border-blue-200 sticky top-2 z-10 shadow-md"
+        style={{ background: 'linear-gradient(90deg, #dff1fb 0%, #f7fbff 45%, #f4eaff 100%)' }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-24">
             {/* Left: hamburger + logo */}
             <div className="flex items-center gap-3">
               <Sheet>
@@ -103,7 +103,7 @@ export function Layout() {
                     className="px-5 py-4 border-b"
                     style={{ background: `linear-gradient(135deg, var(--council-blue-light), var(--council-purple-light))` }}
                   >
-                    <img src={logoImage} alt="Warren Shire Council" className="h-12 object-contain" />
+                    <img src={logoImage} alt="Warren Shire Council" className="h-16 object-contain" />
                   </div>
                   <div className="px-3 py-3">
                     <NavLinks mobile />
@@ -122,7 +122,7 @@ export function Layout() {
               </Sheet>
 
               <Link to="/">
-                <img src={logoImage} alt="Warren Shire Council" className="h-16 object-contain" />
+                <img src={logoImage} alt="Warren Shire Council" className="h-20 object-contain drop-shadow-sm" />
               </Link>
             </div>
 
@@ -164,7 +164,7 @@ export function Layout() {
         <div className="flex gap-6">
           {/* Sidebar — desktop */}
           <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 gap-3">
-            <nav className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 sticky top-20">
+            <nav className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 sticky top-28">
               {/* Sidebar header */}
               <div className="px-3 pb-3 mb-1 border-b border-gray-100">
                 <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Navigation</p>
