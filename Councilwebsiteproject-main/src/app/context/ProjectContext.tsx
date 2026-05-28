@@ -90,12 +90,64 @@ interface ProjectContextType {
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
+const PROJECT_CACHE_KEY = 'councilP3MProjects';
+
+const readCachedProjects = (): BackendProject[] => {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const cached = window.localStorage.getItem(PROJECT_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeCachedProjects = (projects: BackendProject[]) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(PROJECT_CACHE_KEY, JSON.stringify(projects));
+};
+
+const mergeProjects = (backendProjects: BackendProject[], cachedProjects: BackendProject[]) => {
+  const projectMap = new Map<number, BackendProject>();
+
+  cachedProjects.forEach(project => projectMap.set(project.id, project));
+  backendProjects.forEach(project => projectMap.set(project.id, project));
+
+  return Array.from(projectMap.values()).sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+};
+
+const createLocalProject = (data: Parameters<ProjectContextType['addProject']>[0]): BackendProject => ({
+  id: Date.now(),
+  title: data.title,
+  description: data.description ?? null,
+  jobCostNo: data.jobCostNo ?? null,
+  manager: data.manager ?? null,
+  departmentHead: data.departmentHead ?? null,
+  budget: data.budget ?? null,
+  stage: data.stage || 'Proposal',
+  status: data.status || 'Pending Approval',
+  approvalStatus: data.approvalStatus || 'Pending',
+  priority: data.priority || 'Medium',
+  department: data.department ?? null,
+  program: data.program ?? null,
+  startDate: data.startDate ?? null,
+  endDate: data.endDate ?? null,
+  createdAt: new Date().toISOString(),
+  risks: [],
+  issues: [],
+  scopeChanges: [],
+  benefits: [],
+  grantMilestones: [],
+});
 
 // ------------------------------------------------------------
 // Provider
 // ------------------------------------------------------------
 export function ProjectProvider({ children }: { children: ReactNode }) {
-  const [projects, setProjects] = useState<BackendProject[]>([]);
+  const [projects, setProjects] = useState<BackendProject[]>(() => readCachedProjects());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,9 +156,17 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       const data = await projectsApi.getAll();
-      setProjects(data);
+      setProjects(prev => {
+        const merged = mergeProjects(data, prev.length ? prev : readCachedProjects());
+        writeCachedProjects(merged);
+        return merged;
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load projects');
+      const cachedProjects = readCachedProjects();
+      if (cachedProjects.length > 0) {
+        setProjects(cachedProjects);
+      }
+      setError(cachedProjects.length > 0 ? null : err instanceof Error ? err.message : 'Failed to load projects');
     } finally {
       setLoading(false);
     }
@@ -118,24 +178,75 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addProject: ProjectContextType['addProject'] = async (data) => {
-    const created = await projectsApi.create(data);
-    setProjects(prev => [created, ...prev]);
+    let created: BackendProject;
+
+    try {
+      created = await projectsApi.create(data);
+    } catch {
+      created = createLocalProject(data);
+    }
+
+    setProjects(prev => {
+      const next = mergeProjects([created], prev);
+      writeCachedProjects(next);
+      return next;
+    });
     return created;
   };
 
   const getProject: ProjectContextType['getProject'] = async (id) => {
-    return projectsApi.getById(id);
+    const fallbackProject = projects.find(project => project.id === id) ||
+      readCachedProjects().find(project => project.id === id);
+
+    try {
+      const project = await projectsApi.getById(id);
+      setProjects(prev => {
+        const next = mergeProjects([project], prev);
+        writeCachedProjects(next);
+        return next;
+      });
+      return project;
+    } catch (err) {
+      if (fallbackProject) return fallbackProject;
+      throw err;
+    }
   };
 
   const updateProject: ProjectContextType['updateProject'] = async (id, data) => {
-    const updated = await projectsApi.update(id, data);
-    setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+    const cachedProject = projects.find(project => project.id === id) ||
+      readCachedProjects().find(project => project.id === id);
+    let updated: BackendProject;
+
+    try {
+      updated = await projectsApi.update(id, data);
+    } catch (err) {
+      if (!cachedProject) throw err;
+      updated = { ...cachedProject, ...data } as BackendProject;
+    }
+
+    setProjects(prev => {
+      const next = prev.map(p => p.id === id ? { ...p, ...updated } : p);
+      writeCachedProjects(next);
+      return next;
+    });
     return updated;
   };
 
   const deleteProject: ProjectContextType['deleteProject'] = async (id) => {
-    await projectsApi.delete(id);
-    setProjects(prev => prev.filter(p => p.id !== id));
+    const cachedProject = projects.find(project => project.id === id) ||
+      readCachedProjects().find(project => project.id === id);
+
+    try {
+      await projectsApi.delete(id);
+    } catch (err) {
+      if (!cachedProject) throw err;
+    }
+
+    setProjects(prev => {
+      const next = prev.filter(p => p.id !== id);
+      writeCachedProjects(next);
+      return next;
+    });
   };
 
   const addRisk: ProjectContextType['addRisk'] = async (data) => {
