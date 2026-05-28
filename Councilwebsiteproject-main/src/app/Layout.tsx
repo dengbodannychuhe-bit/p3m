@@ -24,8 +24,8 @@ export function Layout() {
   const navigation = [
     { name: 'Dashboard',     path: '/',              icon: LayoutDashboard },
     { name: 'Portfolio',     path: '/portfolio',     icon: Briefcase },
-    { name: 'Projects',      path: '/projects',      icon: FolderOpen },
     { name: 'Programs',      path: '/programs',      icon: Layers },
+    { name: 'Projects',      path: '/projects',      icon: FolderOpen },
     { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount },
     { name: 'Project Updates',path: '/project-updates',icon: Globe },
     { name: 'PM Toolkit',    path: '/toolkit',       icon: Wrench },

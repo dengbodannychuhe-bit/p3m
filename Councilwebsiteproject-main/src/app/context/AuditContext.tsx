@@ -7,6 +7,8 @@ interface AuditContextType {
   notifications: Notification[];
   publicUpdates: PublicUpdate[];
   addAuditLog: (log: Omit<AuditLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'userRole'>) => void;
+  updateAuditLog: (id: string, log: Partial<Omit<AuditLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'userRole'>>) => void;
+  deleteAuditLog: (id: string) => void;
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => void;
   markNotificationAsRead: (id: string) => void;
   markAllNotificationsAsRead: () => void;
@@ -153,6 +155,16 @@ export function AuditProvider({ children }: { children: ReactNode }) {
     setAuditLogs(prev => [newLog, ...prev]);
   };
 
+  const updateAuditLog = (id: string, log: Partial<Omit<AuditLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'userRole'>>) => {
+    setAuditLogs(prev =>
+      prev.map(item => item.id === id ? { ...item, ...log } : item)
+    );
+  };
+
+  const deleteAuditLog = (id: string) => {
+    setAuditLogs(prev => prev.filter(item => item.id !== id));
+  };
+
   const addNotification = (notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => {
     const newNotification: Notification = {
       ...notification,
@@ -236,6 +248,8 @@ export function AuditProvider({ children }: { children: ReactNode }) {
         notifications,
         publicUpdates,
         addAuditLog,
+        updateAuditLog,
+        deleteAuditLog,
         addNotification,
         markNotificationAsRead,
         markAllNotificationsAsRead,

@@ -5,7 +5,7 @@ export interface AuditLog {
   userName: string;
   userRole: 'Admin' | 'Project Manager' | 'Staff Member';
   action: string;
-  entityType: 'Project' | 'Risk' | 'Issue' | 'Benefit' | 'Milestone' | 'Scope Change';
+  entityType: 'Project' | 'Program' | 'Risk' | 'Issue' | 'Benefit' | 'Milestone' | 'Scope Change' | 'Activity';
   entityId: string;
   entityName: string;
   projectId?: string;
