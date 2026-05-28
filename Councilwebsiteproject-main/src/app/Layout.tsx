@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router';
-import { LayoutDashboard, FolderOpen, Menu, Briefcase, LogOut, User, Bell, Globe, FileText, Wrench, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, Menu, Briefcase, LogOut, User, Bell, Globe, FileText, Wrench, ChevronRight, Layers } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Badge } from './components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet';
@@ -25,6 +25,7 @@ export function Layout() {
     { name: 'Dashboard',     path: '/',              icon: LayoutDashboard },
     { name: 'Portfolio',     path: '/portfolio',     icon: Briefcase },
     { name: 'Projects',      path: '/projects',      icon: FolderOpen },
+    { name: 'Programs',      path: '/programs',      icon: Layers },
     { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount },
     { name: 'Project Updates',path: '/project-updates',icon: Globe },
     { name: 'PM Toolkit',    path: '/toolkit',       icon: Wrench },
@@ -83,9 +84,12 @@ export function Layout() {
       <div className="h-1 w-full" style={{ background: `linear-gradient(to right, var(--council-blue), var(--council-purple))` }} />
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-1 z-10 shadow-sm">
+      <header
+        className="border-b border-blue-100 sticky top-1 z-10 shadow-sm"
+        style={{ background: 'linear-gradient(90deg, #f8fbff 0%, #ffffff 58%, #f4f0ff 100%)' }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             {/* Left: hamburger + logo */}
             <div className="flex items-center gap-3">
               <Sheet>
@@ -118,7 +122,7 @@ export function Layout() {
               </Sheet>
 
               <Link to="/">
-                <img src={logoImage} alt="Warren Shire Council" className="h-11 object-contain" />
+                <img src={logoImage} alt="Warren Shire Council" className="h-16 object-contain" />
               </Link>
             </div>
 

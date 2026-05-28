@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { toast } from 'sonner';
 import {
   ArrowLeft, DollarSign, User, AlertTriangle, AlertCircle,
-  FileText, Target, Milestone, Plus, X, Loader2, XCircle, CheckCircle, Trash2, Hash,
+  FileText, Target, Milestone, Plus, X, Loader2, XCircle, CheckCircle, Trash2, Hash, Pencil,
 } from 'lucide-react';
 import type { BackendGrantMilestone, BackendProject } from '../services/api';
 
@@ -35,6 +35,23 @@ export function ProjectDetails() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isUpdatingProject, setIsUpdatingProject] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    jobCostNo: '',
+    budget: '',
+    manager: '',
+    departmentHead: '',
+    department: '',
+    program: '',
+    stage: 'Proposal',
+    status: 'Pending Approval',
+    priority: 'Medium',
+    startDate: '',
+    endDate: '',
+  });
   const [entryDialog, setEntryDialog] = useState<'risk' | 'issue' | 'scope' | null>(null);
   const [isSavingEntry, setIsSavingEntry] = useState(false);
   const [entryForm, setEntryForm] = useState({
@@ -86,6 +103,102 @@ export function ProjectDetails() {
       toast.error('Failed to cancel project');
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const formatCurrency = (value: number | null | undefined) =>
+    value == null
+      ? ''
+      : value.toLocaleString('en-AU', {
+          style: 'currency',
+          currency: 'AUD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+
+  const parseBudget = (value: string) => {
+    const parsed = Number(value.replace(/[^0-9.]/g, ''));
+    return Number.isFinite(parsed) ? Math.round(parsed) : null;
+  };
+
+  const formatDateForInput = (value: string | null | undefined) =>
+    value ? new Date(value).toISOString().slice(0, 10) : '';
+
+  const formatJobCostNo = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 12);
+    return [digits.slice(0, 4), digits.slice(4, 8), digits.slice(8, 12)].filter(Boolean).join(' - ');
+  };
+
+  const openEditDialog = () => {
+    if (!project) return;
+    setEditForm({
+      title: project.title,
+      description: project.description ?? '',
+      jobCostNo: project.jobCostNo ?? '',
+      budget: formatCurrency(project.budget),
+      manager: project.manager ?? '',
+      departmentHead: project.departmentHead ?? '',
+      department: project.department ?? '',
+      program: project.program ?? '',
+      stage: project.stage,
+      status: project.status,
+      priority: project.priority,
+      startDate: formatDateForInput(project.startDate),
+      endDate: formatDateForInput(project.endDate),
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEditChange = (field: string, value: string) => {
+    setEditForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleUpdateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || !project) return;
+
+    if (!editForm.title.trim() || !editForm.description.trim() || !editForm.manager.trim()) {
+      toast.error('Please fill in project title, description, and manager');
+      return;
+    }
+
+    if (editForm.jobCostNo && !/^\d{4} - \d{4} - \d{4}$/.test(editForm.jobCostNo)) {
+      toast.error('Job Cost No must use the format 1234 - 5678 - 9012');
+      return;
+    }
+
+    setIsUpdatingProject(true);
+    try {
+      const updated = await updateProject(Number(id), {
+        title: editForm.title,
+        description: editForm.description,
+        jobCostNo: editForm.jobCostNo || null,
+        budget: editForm.budget ? parseBudget(editForm.budget) : null,
+        manager: editForm.manager,
+        departmentHead: editForm.departmentHead || null,
+        department: editForm.department,
+        program: editForm.program,
+        stage: editForm.stage,
+        status: editForm.status,
+        priority: editForm.priority,
+        startDate: editForm.startDate,
+        endDate: editForm.endDate,
+      });
+      setProject(updated);
+      addAuditLog({
+        action: 'Updated',
+        entityType: 'Project',
+        entityId: String(project.id),
+        entityName: updated.title,
+        projectId: String(project.id),
+        description: `${user?.name ?? 'User'} updated project details for ${updated.title}`,
+      });
+      toast.success('Project updated');
+      setEditDialogOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update project');
+    } finally {
+      setIsUpdatingProject(false);
     }
   };
 
@@ -364,6 +477,17 @@ export function ProjectDetails() {
           )}
         </div>
         {/* Manager / Admin actions */}
+        {canManageStatus && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 flex-shrink-0"
+            onClick={openEditDialog}
+          >
+            <Pencil className="w-4 h-4" />
+            Edit Project
+          </Button>
+        )}
         {canManageStatus && project.status !== 'Cancelled' && (
           <Button
             variant="outline"
@@ -403,7 +527,7 @@ export function ProjectDetails() {
                 <DollarSign className="w-5 h-5 text-gray-400 mt-1" />
                 <div>
                   <p className="text-sm text-gray-600">Budget</p>
-                  <p className="font-semibold text-gray-900">${project.budget.toLocaleString()}</p>
+                  <p className="font-semibold text-gray-900">{formatCurrency(project.budget)} Excl GST</p>
                 </div>
               </div>
             )}
@@ -857,6 +981,119 @@ export function ProjectDetails() {
               {isCancelling ? <><Loader2 className="w-4 h-4 animate-spin" /> Cancelling…</> : 'Yes, Cancel Project'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>
+              Update project details, including budget entries and ownership information.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateProject} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="edit-title">Project Title *</Label>
+                <Input id="edit-title" value={editForm.title} onChange={(e) => handleEditChange('title', e.target.value)} required />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="edit-description">Description *</Label>
+                <Textarea id="edit-description" value={editForm.description} onChange={(e) => handleEditChange('description', e.target.value)} rows={3} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-job-cost">Job Cost No</Label>
+                <Input
+                  id="edit-job-cost"
+                  inputMode="numeric"
+                  placeholder="1234 - 5678 - 9012"
+                  value={editForm.jobCostNo}
+                  maxLength={18}
+                  onChange={(e) => handleEditChange('jobCostNo', formatJobCostNo(e.target.value))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-budget">Budget (e.g. $150,000.00 Excl GST)</Label>
+                <Input
+                  id="edit-budget"
+                  inputMode="decimal"
+                  value={editForm.budget}
+                  onChange={(e) => handleEditChange('budget', e.target.value)}
+                  onBlur={(e) => handleEditChange('budget', formatCurrency(parseBudget(e.target.value)))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-manager">Project Manager *</Label>
+                <Input id="edit-manager" value={editForm.manager} onChange={(e) => handleEditChange('manager', e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-department-head">Department Head</Label>
+                <Input id="edit-department-head" value={editForm.departmentHead} onChange={(e) => handleEditChange('departmentHead', e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-department">Department</Label>
+                <Input id="edit-department" value={editForm.department} onChange={(e) => handleEditChange('department', e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-program">Program</Label>
+                <Input id="edit-program" value={editForm.program} onChange={(e) => handleEditChange('program', e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={editForm.status} onValueChange={(value) => handleEditChange('status', value)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pending Approval">Pending Approval</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="On Hold">On Hold</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <Select value={editForm.priority} onValueChange={(value) => handleEditChange('priority', value)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Critical">Critical</SelectItem>
+                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="Low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Lifecycle Stage</Label>
+                <Select value={editForm.stage} onValueChange={(value) => handleEditChange('stage', value)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Proposal">Proposal</SelectItem>
+                    <SelectItem value="Initiation">Initiation</SelectItem>
+                    <SelectItem value="Planning">Planning</SelectItem>
+                    <SelectItem value="Delivery">Delivery</SelectItem>
+                    <SelectItem value="Close-out">Close-out</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-start">Start Date</Label>
+                <Input id="edit-start" type="date" value={editForm.startDate} onChange={(e) => handleEditChange('startDate', e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-end">End Date</Label>
+                <Input id="edit-end" type="date" value={editForm.endDate} onChange={(e) => handleEditChange('endDate', e.target.value)} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={isUpdatingProject}>
+                {isUpdatingProject ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

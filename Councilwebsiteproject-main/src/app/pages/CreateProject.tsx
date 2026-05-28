@@ -62,7 +62,7 @@ export function CreateProject() {
         jobCostNo: formData.jobCostNo || undefined,
         manager: formData.manager,
         departmentHead: formData.departmentHead || undefined,
-        budget: formData.budget ? Number(formData.budget.replace(/[^0-9]/g, '')) : undefined,
+        budget: formData.budget ? parseBudget(formData.budget) : undefined,
         stage: formData.stage,
         status: formData.status,
         approvalStatus: formData.approvalStatus,
@@ -84,6 +84,22 @@ export function CreateProject() {
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const parseBudget = (value: string) => {
+    const parsed = Number(value.replace(/[^0-9.]/g, ''));
+    return Number.isFinite(parsed) ? Math.round(parsed) : undefined;
+  };
+
+  const formatBudget = (value: string) => {
+    const parsed = Number(value.replace(/[^0-9.]/g, ''));
+    if (!Number.isFinite(parsed) || value.trim() === '') return;
+    handleChange('budget', parsed.toLocaleString('en-AU', {
+      style: 'currency',
+      currency: 'AUD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }));
   };
 
   const handleJobCostChange = (value: string) => {
@@ -222,13 +238,15 @@ export function CreateProject() {
             {/* Budget and Department */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="budget">Budget (e.g. 1500000)</Label>
+                <Label htmlFor="budget">Budget (e.g. $150,000.00 Excl GST)</Label>
                 <Input
                   id="budget"
-                  type="number"
-                  placeholder="e.g. 1500000"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="$150,000.00"
                   value={formData.budget}
                   onChange={(e) => handleChange('budget', e.target.value)}
+                  onBlur={(e) => formatBudget(e.target.value)}
                 />
               </div>
 

@@ -14,6 +14,8 @@ interface AuditContextType {
   deleteNotification: (id: string) => void;
   escalateNotification: (id: string) => void;
   addPublicUpdate: (update: Omit<PublicUpdate, 'id' | 'publishedAt' | 'publishedBy'>) => void;
+  updatePublicUpdate: (id: string, update: Partial<Omit<PublicUpdate, 'id' | 'publishedAt' | 'publishedBy'>>) => void;
+  deletePublicUpdate: (id: string) => void;
   getProjectAuditLogs: (projectId: string) => AuditLog[];
   getUnreadNotificationCount: () => number;
 }
@@ -209,6 +211,16 @@ export function AuditProvider({ children }: { children: ReactNode }) {
     setPublicUpdates(prev => [newUpdate, ...prev]);
   };
 
+  const updatePublicUpdate = (id: string, update: Partial<Omit<PublicUpdate, 'id' | 'publishedAt' | 'publishedBy'>>) => {
+    setPublicUpdates(prev =>
+      prev.map(item => item.id === id ? { ...item, ...update } : item)
+    );
+  };
+
+  const deletePublicUpdate = (id: string) => {
+    setPublicUpdates(prev => prev.filter(item => item.id !== id));
+  };
+
   const getUnreadNotificationCount = () => {
     if (!user) return 0;
     return notifications.filter(n => n.userId === user.id && !n.read).length;
@@ -231,6 +243,8 @@ export function AuditProvider({ children }: { children: ReactNode }) {
         deleteNotification,
         escalateNotification,
         addPublicUpdate,
+        updatePublicUpdate,
+        deletePublicUpdate,
         getProjectAuditLogs,
         getUnreadNotificationCount,
       }}

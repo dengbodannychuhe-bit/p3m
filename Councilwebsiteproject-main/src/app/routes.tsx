@@ -5,6 +5,7 @@ import { ProjectList } from './pages/ProjectList';
 import { CreateProject } from './pages/CreateProject';
 import { ProjectDetails } from './pages/ProjectDetails';
 import { ProjectDetailsFolders } from './pages/ProjectDetailsFolders';
+import { Programs } from './pages/Programs';
 import { Login } from './pages/Login';
 import { PortfolioDashboard } from './pages/PortfolioDashboard';
 import { Notifications } from './pages/Notifications';
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
       { path: 'projects/new', Component: CreateProject },
       { path: 'projects/:id', Component: ProjectDetailsFolders },
       { path: 'projects/:id/details', Component: ProjectDetails },
+      { path: 'programs', Component: Programs },
       { path: 'notifications', Component: Notifications },
       { path: 'project-updates', Component: PublicUpdates },
       { path: 'public-updates', element: <Navigate to="/project-updates" replace /> },

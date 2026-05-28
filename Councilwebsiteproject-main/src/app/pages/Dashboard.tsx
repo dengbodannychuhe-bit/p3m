@@ -113,6 +113,16 @@ export function Dashboard() {
 
   const milestonePct = totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
 
+  const formatCurrency = (value: number | null | undefined) =>
+    value == null
+      ? ''
+      : value.toLocaleString('en-AU', {
+          style: 'currency',
+          currency: 'AUD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+
   const exportDashboardReport = () => {
     const headers = [
       'Project',
@@ -138,7 +148,7 @@ export function Dashboard() {
       project.manager || '',
       project.departmentHead || '',
       project.department || '',
-      project.budget ?? '',
+      formatCurrency(project.budget),
       (project.risks ?? []).length,
       (project.issues ?? []).length,
     ]);
@@ -259,12 +269,13 @@ export function Dashboard() {
         </CardHeader>
         <CardContent className="pt-4">
           {projects.length > 0 ? (
-            <Table>
+            <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
                   <TableHead>Project</TableHead>
                   <TableHead>Program</TableHead>
                   <TableHead>Job Cost No</TableHead>
+                  <TableHead>Budget</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Priority</TableHead>
@@ -282,11 +293,11 @@ export function Dashboard() {
                       </Link>
                       <div className="flex items-center gap-2 mt-1">
                         {project.priority && <Badge className={`text-xs ${getPriorityColor(project.priority)}`}>{project.priority}</Badge>}
-                        {project.description && <span className="text-xs text-gray-400 line-clamp-1">{project.description}</span>}
                       </div>
                     </TableCell>
                     <TableCell>{project.program || 'No Program'}</TableCell>
                     <TableCell>{project.jobCostNo || '-'}</TableCell>
+                    <TableCell>{formatCurrency(project.budget) || '-'}</TableCell>
                     <TableCell>{project.stage}</TableCell>
                     <TableCell><Badge className={`text-xs border ${getStatusColor(project.status)}`}>{project.status}</Badge></TableCell>
                     <TableCell>{project.priority ? <Badge className={`text-xs ${getPriorityColor(project.priority)}`}>{project.priority}</Badge> : '-'}</TableCell>

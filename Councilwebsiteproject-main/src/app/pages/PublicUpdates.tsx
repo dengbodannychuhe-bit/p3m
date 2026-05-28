@@ -10,15 +10,16 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Globe, Plus, Calendar, User } from 'lucide-react';
+import { Globe, Plus, Calendar, User, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
 export function PublicUpdates() {
-  const { publicUpdates, addPublicUpdate } = useAudit();
+  const { publicUpdates, addPublicUpdate, updatePublicUpdate, deletePublicUpdate } = useAudit();
   const { user } = useAuth();
   const { projects } = useProjects();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     projectId: '',
     title: '',
@@ -26,10 +27,36 @@ export function PublicUpdates() {
     category: 'Announcement' as 'Progress' | 'Milestone' | 'Announcement' | 'Completion',
   });
 
-  const canCreateUpdate = user?.role === 'Admin' || user?.role === 'Project Manager';
+  const canCreateUpdate = user?.role === 'Administrator' || user?.role === 'Manager';
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      projectId: '',
+      title: '',
+      description: '',
+      category: 'Announcement',
+    });
+    setEditingUpdateId(null);
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (update: typeof publicUpdates[0]) => {
+    setEditingUpdateId(update.id);
+    setFormData({
+      projectId: update.projectId,
+      title: update.title,
+      description: update.description,
+      category: update.category,
+    });
+    setIsDialogOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -46,22 +73,24 @@ export function PublicUpdates() {
       return;
     }
 
-    addPublicUpdate({
+    const updatePayload = {
       projectId: formData.projectId,
       projectName: (selectedProject as any).title ?? (selectedProject as any).name ?? 'Unknown',
       title: formData.title,
       description: formData.description,
       category: formData.category,
       isPublic: true,
-    });
+    };
 
-    toast.success('Project update published successfully!');
-    setFormData({
-      projectId: '',
-      title: '',
-      description: '',
-      category: 'Announcement',
-    });
+    if (editingUpdateId) {
+      updatePublicUpdate(editingUpdateId, updatePayload);
+      toast.success('Project update saved successfully!');
+    } else {
+      addPublicUpdate(updatePayload);
+      toast.success('Project update published successfully!');
+    }
+
+    resetForm();
     setIsDialogOpen(false);
   };
 
@@ -90,7 +119,7 @@ export function PublicUpdates() {
         </div>
         {canCreateUpdate && (
           <Button
-            onClick={() => setIsDialogOpen(true)}
+            onClick={openCreateDialog}
             className="text-white hover:opacity-90 gap-2"
             style={{ backgroundColor: 'var(--council-blue)' }}
           >
@@ -126,6 +155,26 @@ export function PublicUpdates() {
                     <CardTitle className="text-xl">{update.title}</CardTitle>
                     <p className="text-sm text-gray-600 mt-1">{update.projectName}</p>
                   </div>
+                  {canCreateUpdate && (
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" className="gap-1.5 bg-white" onClick={() => openEditDialog(update)}>
+                        <Pencil className="w-4 h-4" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 bg-white text-red-700 border-red-200 hover:bg-red-50"
+                        onClick={() => {
+                          deletePublicUpdate(update.id);
+                          toast.success('Project update deleted');
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -158,12 +207,15 @@ export function PublicUpdates() {
       </div>
 
       {/* Create Update Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        setIsDialogOpen(open);
+        if (!open) resetForm();
+      }}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Publish Public Update</DialogTitle>
+            <DialogTitle>{editingUpdateId ? 'Edit Project Update' : 'Publish Project Update'}</DialogTitle>
             <DialogDescription>
-              Share project progress and announcements with the community
+              Enter or update project progress and announcements.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
@@ -234,7 +286,7 @@ export function PublicUpdates() {
                 Cancel
               </Button>
               <Button type="submit" className="text-white hover:opacity-90" style={{ backgroundColor: 'var(--council-blue)' }}>
-                Publish Update
+                {editingUpdateId ? 'Save Update' : 'Publish Update'}
               </Button>
             </DialogFooter>
           </form>
